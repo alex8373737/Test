@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Геолокация в реальном времени</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .coords {
+      font-size: 24px;
+      margin: 10px;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>📍 Ваши координаты</h1>
+  <div class="coords" id="latitude">Широта: —</div>
+  <div class="coords" id="longitude">Долгота: —</div>
+  <div class="coords" id="timestamp">Время обновления: —</div>
+  <div class="error" id="error"></div>
+
+  <script>
+    function updateCoordinates() {
+      if (!navigator.geolocation) {
+        document.getElementById('error').textContent = 'Геолокация не поддерживается вашим браузером.';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lon = position.coords.longitude.toFixed(6);
+          const time = new Date().toLocaleTimeString();
+
+          document.getElementById('latitude').textContent = `Широта: ${lat}`;
+          document.getElementById('longitude').textContent = `Долгота: ${lon}`;
+          document.getElementById('timestamp').textContent = `Время обновления: ${time}`;
+          document.getElementById('error').textContent = '';
+        },
+        error => {
+          document.getElementById('error').textContent = 'Ошибка получения координат: ' + error.message;
+        }
+      );
+    }
+
+    // Запуск сразу и потом каждую секунду
+    updateCoordinates();
+    setInterval(updateCoordinates, 1000);
+  </script>
+</body>
+</html>
