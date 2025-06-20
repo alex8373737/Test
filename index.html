@@ -1,62 +1,303 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Геолокация в реальном времени</title>
+  <meta charset="UTF-8" />
+  <title>Тапалка v2.6.1</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #111;
-      color: #0f0;
+      font-family: sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding-top: 60px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    button {
+      font-size: 24px;
+      padding: 15px 30px;
+      margin: 15px;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .click-btn {
+      width: 150px;
+      height: 150px;
+      background-color: red;
+      color: white;
+      border-radius: 50%;
+      border: 5px solid gray;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      margin: 30px auto;
+      font-weight: bold;
+      font-family: sans-serif;
+      user-select: none;
+      position: relative;
+      z-index: 1;
     }
-    .coords {
-      font-size: 24px;
-      margin: 10px;
+
+    .upgrade-btn, .autoclicker-btn {
+      background-color: #ff9800;
+      color: white;
     }
-    .error {
-      color: red;
+
+    .info {
+      font-size: 20px;
+      margin-top: 10px;
+    }
+
+    #autoclicker-timer {
+      position: absolute;
+      top: 10px;
+      left: 15px;
+      font-size: 18px;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 6px 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    #code-button {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 18px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2196F3;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .floating-text {
+      position: absolute;
+      color: green;
+      font-weight: bold;
+      pointer-events: none;
+      animation: float-up 1s ease-out forwards;
+      z-index: 999;
+    }
+
+    @keyframes float-up {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-60px); }
     }
   </style>
 </head>
 <body>
-  <h1>📍 Ваши координаты</h1>
-  <div class="coords" id="latitude">Широта: —</div>
-  <div class="coords" id="longitude">Долгота: —</div>
-  <div class="coords" id="timestamp">Время обновления: —</div>
-  <div class="error" id="error"></div>
+
+  <div id="autoclicker-timer">Автокликер: 0.0 сек</div>
+  <button id="code-button" onclick="enterCode()">Коды</button>
+
+  <button class="click-btn" id="clickBtn">0</button>
+
+  <div class="info">Уровень кнопки: <span id="level">1</span></div>
+  <div class="info">Стоимость улучшения кнопки: <span id="upgradeCost">10</span></div>
+  <button class="upgrade-btn" onclick="upgrade()">Улучшить кнопку</button>
+
+  <div class="info">Уровень автокликера: <span id="autoclickerLevel">0</span></div>
+  <div class="info">Стоимость автокликера: <span id="autoclickerCost">50</span></div>
+  <button class="autoclicker-btn" onclick="upgradeAutoclicker()">Улучшить автокликер</button>
 
   <script>
-    function updateCoordinates() {
-      if (!navigator.geolocation) {
-        document.getElementById('error').textContent = 'Геолокация не поддерживается вашим браузером.';
-        return;
-      }
+    let count = 0;
+    let increment = 1;
+    let level = 1;
+    let upgradeCost = 10;
 
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          const lat = position.coords.latitude.toFixed(6);
-          const lon = position.coords.longitude.toFixed(6);
-          const time = new Date().toLocaleTimeString();
+    let autoclickerLevel = 0;
+    let autoclickerCost = 50;
+    let autoclickerInterval = null;
+    let intervalMS = 0;
+    let timer = 0;
+    let countdownUpdater = null;
 
-          document.getElementById('latitude').textContent = `Широта: ${lat}`;
-          document.getElementById('longitude').textContent = `Долгота: ${lon}`;
-          document.getElementById('timestamp').textContent = `Время обновления: ${time}`;
-          document.getElementById('error').textContent = '';
-        },
-        error => {
-          document.getElementById('error').textContent = 'Ошибка получения координат: ' + error.message;
-        }
-      );
+    let isFreeUpgrades = false;
+
+    function tap(x = null, y = null) {
+      count += increment;
+      updateCounter();
+      saveGame();
+      showFloatingText(`+${increment}`, x, y);
     }
 
-    // Запуск сразу и потом каждую секунду
-    updateCoordinates();
-    setInterval(updateCoordinates, 1000);
+    function showFloatingText(text, x, y) {
+      const el = document.createElement('div');
+      el.textContent = text;
+      el.className = 'floating-text';
+
+      const rect = document.getElementById("clickBtn").getBoundingClientRect();
+      el.style.left = (x ?? rect.left + rect.width / 2) + "px";
+      el.style.top = (y ?? rect.top + rect.height / 2) + "px";
+
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1000);
+    }
+
+    function adjustFontSize() {
+      const btn = document.getElementById("clickBtn");
+      const maxWidth = 120;
+      let fontSize = 32;
+      btn.style.fontSize = fontSize + "px";
+
+      const span = document.createElement("span");
+      span.style.visibility = "hidden";
+      span.style.position = "fixed";
+      span.style.whiteSpace = "nowrap";
+      span.style.fontWeight = "bold";
+      span.style.fontFamily = "sans-serif";
+      span.style.fontSize = fontSize + "px";
+      span.textContent = btn.textContent;
+      document.body.appendChild(span);
+
+      while (span.offsetWidth > maxWidth && fontSize > 8) {
+        fontSize -= 1;
+        span.style.fontSize = fontSize + "px";
+      }
+
+      btn.style.fontSize = fontSize + "px";
+      document.body.removeChild(span);
+    }
+
+    function updateCounter() {
+      document.getElementById("clickBtn").textContent = Math.floor(count);
+      adjustFontSize();
+    }
+
+    function upgrade() {
+      if (isFreeUpgrades || count >= upgradeCost) {
+        if (!isFreeUpgrades) count -= upgradeCost;
+        increment += 1;
+        level += 1;
+        upgradeCost = Math.floor(upgradeCost * 3.0);
+        updateUI();
+        saveGame();
+      } else {
+        alert("Недостаточно кликов для улучшения кнопки!");
+      }
+    }
+
+    function upgradeAutoclicker() {
+      if (isFreeUpgrades || count >= autoclickerCost) {
+        if (!isFreeUpgrades) count -= autoclickerCost;
+        autoclickerLevel += 1;
+        autoclickerCost = Math.floor(autoclickerCost * 3.1);
+        startAutoclicker();
+        updateUI();
+        saveGame();
+      } else {
+        alert("Недостаточно кликов для улучшения автокликера!");
+      }
+    }
+
+    function startAutoclicker() {
+      if (autoclickerInterval !== null) clearInterval(autoclickerInterval);
+      if (countdownUpdater !== null) clearInterval(countdownUpdater);
+
+      if (autoclickerLevel >= 1) {
+        intervalMS = 5000 / Math.pow(1.1, autoclickerLevel - 1);
+        intervalMS = Math.max(300, intervalMS);
+        timer = intervalMS;
+
+        autoclickerInterval = setInterval(() => {
+          tap(); // авто
+          timer = intervalMS;
+        }, intervalMS);
+
+        countdownUpdater = setInterval(() => {
+          timer -= 100;
+          let secondsLeft = Math.max(0, (timer / 1000)).toFixed(1);
+          document.getElementById("autoclicker-timer").textContent = `Автокликер: ${secondsLeft} сек`;
+        }, 100);
+      } else {
+        document.getElementById("autoclicker-timer").textContent = "Автокликер: 0.0 сек";
+      }
+    }
+
+    function updateUI() {
+      updateCounter();
+      document.getElementById("level").textContent = level;
+      document.getElementById("upgradeCost").textContent = isFreeUpgrades ? "0 (бесплатно)" : upgradeCost;
+      document.getElementById("autoclickerLevel").textContent = autoclickerLevel;
+      document.getElementById("autoclickerCost").textContent = isFreeUpgrades ? "0 (бесплатно)" : autoclickerCost;
+    }
+
+    function enterCode() {
+      let code = prompt("Введите секретный код:");
+      if (!code) return;
+
+      if (code === "resT64") {
+        localStorage.clear();
+        count = 0;
+        increment = 1;
+        level = 1;
+        upgradeCost = 10;
+        autoclickerLevel = 0;
+        autoclickerCost = 50;
+        isFreeUpgrades = false;
+        if (autoclickerInterval !== null) clearInterval(autoclickerInterval);
+        if (countdownUpdater !== null) clearInterval(countdownUpdater);
+        autoclickerInterval = null;
+        countdownUpdater = null;
+        updateUI();
+        document.getElementById("autoclicker-timer").textContent = "Автокликер: 0.0 сек";
+        alert("Прогресс сброшен!");
+      }
+      else if (code === "infop") {
+        isFreeUpgrades = true;
+        updateUI();
+        saveGame();
+        alert("Режим бесплатных улучшений активирован!");
+      }
+      else {
+        alert("Неверный или неактивный код.");
+      }
+    }
+
+    function saveGame() {
+      const saveData = {
+        count, increment, level, upgradeCost,
+        autoclickerLevel, autoclickerCost,
+        isFreeUpgrades
+      };
+      localStorage.setItem("tapGameSave", JSON.stringify(saveData));
+    }
+
+    function loadGame() {
+      const saveData = JSON.parse(localStorage.getItem("tapGameSave"));
+      if (saveData) {
+        count = saveData.count;
+        increment = saveData.increment;
+        level = saveData.level;
+        upgradeCost = saveData.upgradeCost;
+        autoclickerLevel = saveData.autoclickerLevel;
+        autoclickerCost = saveData.autoclickerCost;
+        isFreeUpgrades = saveData.isFreeUpgrades || false;
+        updateUI();
+        if (autoclickerLevel >= 1) startAutoclicker();
+      }
+    }
+
+    document.getElementById("clickBtn").addEventListener("click", function (e) {
+      const x = e.clientX;
+      const y = e.clientY;
+      tap(x, y);
+    });
+
+    window.onload = loadGame;
   </script>
+
 </body>
 </html>
