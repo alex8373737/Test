@@ -2,49 +2,35 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Тапалка v2.6.1 mobile fix</title>
+  <title>Тапалка v2.6.3</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
+    body {
       font-family: sans-serif;
       background: #f0f0f0;
-      touch-action: manipulation;
-      overscroll-behavior: none;
+      margin: 0;
+      padding-top: 60px;
+      text-align: center;
+      overflow: hidden;
     }
 
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 15px;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background-color: rgba(255, 255, 255, 0.95);
-      z-index: 100;
-    }
-
-    #autoclicker-timer {
-      font-size: 16px;
-    }
-
-    #code-button {
-      font-size: 16px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 8px;
-      background-color: #2196F3;
-      color: white;
+    button {
+      font-size: 24px;
+      padding: 15px 30px;
+      margin: 15px;
       cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.98);
     }
 
     .click-btn {
-      width: 160px;
-      height: 160px;
+      width: 150px;
+      height: 150px;
       background-color: red;
       color: white;
       border-radius: 50%;
@@ -52,20 +38,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 100px auto 20px;
-      font-size: 28px;
+      margin: 30px auto;
       font-weight: bold;
+      font-family: sans-serif;
       user-select: none;
-    }
-
-    button {
-      font-size: 20px;
-      padding: 12px 24px;
-      margin: 10px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 1;
     }
 
     .upgrade-btn, .autoclicker-btn {
@@ -74,8 +52,33 @@
     }
 
     .info {
-      font-size: 18px;
+      font-size: 20px;
       margin-top: 10px;
+    }
+
+    #autoclicker-timer {
+      position: absolute;
+      top: 10px;
+      left: 15px;
+      font-size: 18px;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 6px 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    #code-button {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 18px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2196F3;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
     .floating-text {
@@ -95,10 +98,8 @@
 </head>
 <body>
 
-  <div class="top-bar">
-    <div id="autoclicker-timer">Автокликер: 0.0 сек</div>
-    <button id="code-button" onclick="enterCode()">Коды</button>
-  </div>
+  <div id="autoclicker-timer">Автокликер: 0.0 сек</div>
+  <button id="code-button" onclick="enterCode()">Коды</button>
 
   <button class="click-btn" id="clickBtn">0</button>
 
@@ -124,6 +125,7 @@
     let countdownUpdater = null;
 
     let isFreeUpgrades = false;
+    let usedCodes = [];
 
     function tap(x = null, y = null) {
       count += increment;
@@ -207,7 +209,7 @@
 
       if (autoclickerLevel >= 1) {
         intervalMS = 5000 / Math.pow(1.1, autoclickerLevel - 1);
-        intervalMS = Math.max(300, intervalMS);
+        intervalMS = Math.max(100, intervalMS);
         timer = intervalMS;
 
         autoclickerInterval = setInterval(() => {
@@ -237,6 +239,11 @@
       let code = prompt("Введите секретный код:");
       if (!code) return;
 
+      if (usedCodes.includes(code)) {
+        alert("Этот код уже был использован.");
+        return;
+      }
+
       if (code === "resT64") {
         localStorage.clear();
         count = 0;
@@ -246,30 +253,34 @@
         autoclickerLevel = 0;
         autoclickerCost = 50;
         isFreeUpgrades = false;
-        if (autoclickerInterval !== null) clearInterval(autoclickerInterval);
-        if (countdownUpdater !== null) clearInterval(countdownUpdater);
-        autoclickerInterval = null;
-        countdownUpdater = null;
+        usedCodes = [];
+        if (autoclickerInterval) clearInterval(autoclickerInterval);
+        if (countdownUpdater) clearInterval(countdownUpdater);
         updateUI();
         document.getElementById("autoclicker-timer").textContent = "Автокликер: 0.0 сек";
         alert("Прогресс сброшен!");
-      }
-      else if (code === "infop") {
+      } else if (code === "infop") {
         isFreeUpgrades = true;
-        updateUI();
-        saveGame();
         alert("Режим бесплатных улучшений активирован!");
-      }
-      else {
+        updateUI();
+      } else if (code === "2pl888") {
+        count += 50000;
+        usedCodes.push("2pl888");
+        alert("Вы получили 50 000 кликов!");
+        updateCounter();
+        saveGame();
+      } else {
         alert("Неверный или неактивный код.");
       }
+
+      saveGame();
     }
 
     function saveGame() {
       const saveData = {
         count, increment, level, upgradeCost,
         autoclickerLevel, autoclickerCost,
-        isFreeUpgrades
+        isFreeUpgrades, usedCodes
       };
       localStorage.setItem("tapGameSave", JSON.stringify(saveData));
     }
@@ -284,19 +295,17 @@
         autoclickerLevel = saveData.autoclickerLevel;
         autoclickerCost = saveData.autoclickerCost;
         isFreeUpgrades = saveData.isFreeUpgrades || false;
+        usedCodes = saveData.usedCodes || [];
         updateUI();
         if (autoclickerLevel >= 1) startAutoclicker();
       }
     }
 
-    document.getElementById("clickBtn").addEventListener("click", function (e) {
-      const x = e.clientX;
-      const y = e.clientY;
-      tap(x, y);
+    document.getElementById("clickBtn").addEventListener("pointerdown", function (e) {
+      tap(e.clientX, e.clientY);
     });
 
     window.onload = loadGame;
   </script>
-
 </body>
 </html>
