@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Тапалка v2.6.2</title>
   <style>
     body {
@@ -126,7 +125,6 @@
     let countdownUpdater = null;
 
     let isFreeUpgrades = false;
-    let usedCodes = JSON.parse(localStorage.getItem("usedCodes")) || {};
 
     function tap(x = null, y = null) {
       count += increment;
@@ -183,7 +181,7 @@
         if (!isFreeUpgrades) count -= upgradeCost;
         increment += 1;
         level += 1;
-        upgradeCost = Math.floor(upgradeCost * 3.0);
+        upgradeCost = Math.floor(upgradeCost * 2.0);
         updateUI();
         saveGame();
       } else {
@@ -195,7 +193,7 @@
       if (isFreeUpgrades || count >= autoclickerCost) {
         if (!isFreeUpgrades) count -= autoclickerCost;
         autoclickerLevel += 1;
-        autoclickerCost = Math.floor(autoclickerCost * 3.1);
+        autoclickerCost = Math.floor(autoclickerCost * 2.1);
         startAutoclicker();
         updateUI();
         saveGame();
@@ -214,7 +212,7 @@
         timer = intervalMS;
 
         autoclickerInterval = setInterval(() => {
-          tap(); 
+          tap(); // авто
           timer = intervalMS;
         }, intervalMS);
 
@@ -240,6 +238,8 @@
       let code = prompt("Введите секретный код:");
       if (!code) return;
 
+      const usedCodes = JSON.parse(localStorage.getItem("usedCodes") || "{}");
+
       if (code === "resT64") {
         localStorage.clear();
         count = 0;
@@ -249,8 +249,7 @@
         autoclickerLevel = 0;
         autoclickerCost = 50;
         isFreeUpgrades = false;
-        usedCodes = {};
-        localStorage.setItem("usedCodes", "{}");
+        localStorage.removeItem("usedCodes");
         if (autoclickerInterval !== null) clearInterval(autoclickerInterval);
         if (countdownUpdater !== null) clearInterval(countdownUpdater);
         autoclickerInterval = null;
@@ -272,9 +271,9 @@
           localStorage.setItem("usedCodes", JSON.stringify(usedCodes));
           updateUI();
           saveGame();
-          alert("Начислено 50000 кликов!");
+          alert("Начислено 50 000 кликов!");
         } else {
-          alert("Код уже использован.");
+          alert("Этот код уже был использован.");
         }
       }
       else {
@@ -312,10 +311,7 @@
       tap(x, y);
     });
 
-    window.onload = () => {
-      loadGame();
-      usedCodes = JSON.parse(localStorage.getItem("usedCodes")) || {};
-    };
+    window.onload = loadGame;
   </script>
 
 </body>
