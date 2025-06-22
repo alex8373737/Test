@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Тапалка v2.6.3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тапалка v2.6.2</title>
   <style>
     body {
       font-family: sans-serif;
@@ -125,7 +126,7 @@
     let countdownUpdater = null;
 
     let isFreeUpgrades = false;
-    let usedCodes = [];
+    let usedCodes = JSON.parse(localStorage.getItem("usedCodes")) || {};
 
     function tap(x = null, y = null) {
       count += increment;
@@ -213,7 +214,7 @@
         timer = intervalMS;
 
         autoclickerInterval = setInterval(() => {
-          tap();
+          tap(); 
           timer = intervalMS;
         }, intervalMS);
 
@@ -239,11 +240,6 @@
       let code = prompt("Введите секретный код:");
       if (!code) return;
 
-      if (usedCodes.includes(code)) {
-        alert("Этот код уже был использован.");
-        return;
-      }
-
       if (code === "resT64") {
         localStorage.clear();
         count = 0;
@@ -253,34 +249,44 @@
         autoclickerLevel = 0;
         autoclickerCost = 50;
         isFreeUpgrades = false;
-        usedCodes = [];
-        if (autoclickerInterval) clearInterval(autoclickerInterval);
-        if (countdownUpdater) clearInterval(countdownUpdater);
+        usedCodes = {};
+        localStorage.setItem("usedCodes", "{}");
+        if (autoclickerInterval !== null) clearInterval(autoclickerInterval);
+        if (countdownUpdater !== null) clearInterval(countdownUpdater);
+        autoclickerInterval = null;
+        countdownUpdater = null;
         updateUI();
         document.getElementById("autoclicker-timer").textContent = "Автокликер: 0.0 сек";
         alert("Прогресс сброшен!");
-      } else if (code === "infop") {
+      }
+      else if (code === "infop") {
         isFreeUpgrades = true;
-        alert("Режим бесплатных улучшений активирован!");
         updateUI();
-      } else if (code === "2pl888") {
-        count += 50000;
-        usedCodes.push("2pl888");
-        alert("Вы получили 50 000 кликов!");
-        updateCounter();
         saveGame();
-      } else {
+        alert("Режим бесплатных улучшений активирован!");
+      }
+      else if (code === "2pl888") {
+        if (!usedCodes["2pl888"]) {
+          count += 50000;
+          usedCodes["2pl888"] = true;
+          localStorage.setItem("usedCodes", JSON.stringify(usedCodes));
+          updateUI();
+          saveGame();
+          alert("Начислено 50000 кликов!");
+        } else {
+          alert("Код уже использован.");
+        }
+      }
+      else {
         alert("Неверный или неактивный код.");
       }
-
-      saveGame();
     }
 
     function saveGame() {
       const saveData = {
         count, increment, level, upgradeCost,
         autoclickerLevel, autoclickerCost,
-        isFreeUpgrades, usedCodes
+        isFreeUpgrades
       };
       localStorage.setItem("tapGameSave", JSON.stringify(saveData));
     }
@@ -295,17 +301,22 @@
         autoclickerLevel = saveData.autoclickerLevel;
         autoclickerCost = saveData.autoclickerCost;
         isFreeUpgrades = saveData.isFreeUpgrades || false;
-        usedCodes = saveData.usedCodes || [];
         updateUI();
         if (autoclickerLevel >= 1) startAutoclicker();
       }
     }
 
-    document.getElementById("clickBtn").addEventListener("pointerdown", function (e) {
-      tap(e.clientX, e.clientY);
+    document.getElementById("clickBtn").addEventListener("click", function (e) {
+      const x = e.clientX;
+      const y = e.clientY;
+      tap(x, y);
     });
 
-    window.onload = loadGame;
+    window.onload = () => {
+      loadGame();
+      usedCodes = JSON.parse(localStorage.getItem("usedCodes")) || {};
+    };
   </script>
+
 </body>
 </html>
